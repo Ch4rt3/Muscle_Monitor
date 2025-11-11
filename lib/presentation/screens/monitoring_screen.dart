@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import 'package:muscle_monitoring/presentation/providers/ble_provider.dart';
+import 'package:muscle_monitoring/features/alerts/alerts.dart';
 
 class MonitoringScreen extends StatelessWidget {
   static const name = 'monitoring-screen';
@@ -50,6 +51,9 @@ class _MonitoringScreenView extends ConsumerWidget {
                         padding: EdgeInsets.symmetric(vertical: 8.0),
                         child: Text('Esperando conexion...'),
                       ),
+
+                // Indicador de estado de fatiga
+                const FatigueIndicator(),
 
                 const SizedBox(height: 12),
                 // Chart de Fuerza
