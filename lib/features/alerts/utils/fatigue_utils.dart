@@ -93,7 +93,7 @@ FatigueAlertConfig? getAlertConfig(FatigueLevel level) {
 /// Convierte el valor EMG (0-255) a porcentaje (0-100)
 double emgToPercentage(double emgValue) {
   // El MyoWare 2.0 con ESP32 típicamente envía valores de 0-255
-  return (emgValue / 255) * 100;
+  return emgValue;
 }
 
 /// Calcula un promedio móvil para suavizar los datos y evitar falsos positivos
