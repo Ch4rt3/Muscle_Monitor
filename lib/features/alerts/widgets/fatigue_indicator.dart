@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:muscle_monitoring/config/theme/design_tokens.dart';
 import 'package:muscle_monitoring/features/alerts/alerts.dart';
 
 /// Indicador visual del nivel de fatiga actual
@@ -14,24 +15,28 @@ class FatigueIndicator extends ConsumerWidget {
     final alertState = ref.watch(fatigueAlertProvider);
     final level = alertState.currentLevel;
     final value = alertState.currentValue;
+    final textTheme = Theme.of(context).textTheme;
 
-    // Obtener configuración visual según el nivel
-    final config = getAlertConfig(level);
-    final color = config?.color ?? Colors.grey.shade400;
-    final icon = config?.icon ?? Icons.favorite_border;
+    final color = _getColor(level);
+    final bgColor = _getBgColor(level);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 2),
+        color: bgColor,
+        borderRadius: AppRadius.xlRadius,
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 12),
+          Icon(
+            _getIcon(level),
+            color: color,
+            size: 24,
+          ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,65 +44,95 @@ class FatigueIndicator extends ConsumerWidget {
               children: [
                 Text(
                   _getLevelText(level),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+                  style: textTheme.titleMedium?.copyWith(color: color),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Fatiga: ${value.toStringAsFixed(1)}%',
-                  style: TextStyle(fontSize: 12, color: color.withOpacity(0.8)),
+                  style: textTheme.labelSmall?.copyWith(
+                    color: color.withAlpha(200),
+                  ),
                 ),
               ],
             ),
           ),
-          _buildFatigueBar(value, color),
+          _buildFatigueRing(value, color, textTheme),
         ],
       ),
     );
   }
 
-  String _getLevelText(FatigueLevel level) {
-    switch (level) {
-      case FatigueLevel.none:
-        return 'Estado Normal';
-      case FatigueLevel.low:
-        return 'Fatiga Leve';
-      case FatigueLevel.medium:
-        return 'Fatiga Moderada';
-      case FatigueLevel.high:
-        return 'Fatiga Severa';
-    }
+  Color _getColor(FatigueLevel level) {
+    return switch (level) {
+      FatigueLevel.none => AppColors.success,
+      FatigueLevel.low => AppColors.warning,
+      FatigueLevel.medium => AppColors.warning,
+      FatigueLevel.high => AppColors.error,
+    };
   }
 
-  Widget _buildFatigueBar(double value, Color color) {
+  Color _getBgColor(FatigueLevel level) {
+    return switch (level) {
+      FatigueLevel.none => AppColors.successBg,
+      FatigueLevel.low => AppColors.warningBg,
+      FatigueLevel.medium => AppColors.warningBg,
+      FatigueLevel.high => AppColors.errorBg,
+    };
+  }
+
+  IconData _getIcon(FatigueLevel level) {
+    return switch (level) {
+      FatigueLevel.none => Icons.favorite_outline,
+      FatigueLevel.low => Icons.info_outline,
+      FatigueLevel.medium => Icons.warning_amber_outlined,
+      FatigueLevel.high => Icons.error_outline,
+    };
+  }
+
+  String _getLevelText(FatigueLevel level) {
+    return switch (level) {
+      FatigueLevel.none => 'Estado Normal',
+      FatigueLevel.low => 'Fatiga Leve',
+      FatigueLevel.medium => 'Fatiga Moderada',
+      FatigueLevel.high => 'Fatiga Severa',
+    };
+  }
+
+  Widget _buildFatigueRing(
+    double value,
+    Color color,
+    TextTheme textTheme,
+  ) {
     return SizedBox(
-      width: 60,
-      height: 40,
+      width: 64,
+      height: 64,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Barra de progreso circular
           SizedBox(
-            width: 40,
-            height: 40,
+            width: 56,
+            height: 56,
             child: CircularProgressIndicator(
               value: value / 100,
-              strokeWidth: 4,
-              backgroundColor: Colors.grey.shade200,
+              strokeWidth: 5,
+              backgroundColor: AppColors.surfaceAlt,
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
-          // Porcentaje en el centro
-          Text(
-            '${value.toStringAsFixed(0)}%',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${value.toStringAsFixed(0)}%',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                'Fatiga',
+                style: textTheme.labelSmall,
+              ),
+            ],
           ),
         ],
       ),

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+import 'package:muscle_monitoring/config/theme/design_tokens.dart';
 import 'package:muscle_monitoring/presentation/providers/ble_provider.dart';
+import 'package:muscle_monitoring/presentation/widgets/shared/app_card.dart';
+import 'package:muscle_monitoring/presentation/widgets/shared/status_chip.dart';
 import 'package:muscle_monitoring/features/alerts/alerts.dart';
 
 class MonitoringScreen extends StatelessWidget {
@@ -21,58 +24,95 @@ class _MonitoringScreenView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var deviceName = ref.watch(bleProvider).currentDevice?.advName;
+    final bleState = ref.watch(bleProvider);
+    var deviceName = bleState.currentDevice?.advName;
+    final isConnected =
+        bleState.connectionState == BleConnectionState.connected;
 
     if (deviceName != null && deviceName.isEmpty) {
       deviceName = 'dispositivo';
     }
 
+    final textTheme = Theme.of(context).textTheme;
+
     return CustomScrollView(
       slivers: [
-        const SliverAppBar(
-          title: Text('Monitoreo muscular', style: TextStyle(fontSize: 20)),
-          toolbarHeight: 40,
+        SliverAppBar(
+          title: const Text('Monitoreo'),
           floating: true,
-          flexibleSpace: FlexibleSpaceBar(
-            titlePadding: EdgeInsets.zero,
-            centerTitle: false,
-          ),
+          actions: [
+            if (isConnected)
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
+                child: IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: 'Configuración',
+                  onPressed: () {},
+                ),
+              ),
+          ],
         ),
-        SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            return Column(
-              children: [
-                (deviceName != null)
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text('Conectado a $deviceName'),
-                      )
-                    : const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: Text('Esperando conexion...'),
-                      ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenHorizontal,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              const SizedBox(height: AppSpacing.sm),
 
-                // Indicador de estado de fatiga
-                const FatigueIndicator(),
+              // Estado de conexión
+              Row(
+                children: [
+                  if (isConnected) ...[
+                    const StatusChip(
+                      label: 'Tiempo real',
+                      color: AppColors.primary,
+                      background: AppColors.primaryLight,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    StatusChip(
+                      label: 'Conectado',
+                      color: AppColors.success,
+                      background: AppColors.successBg,
+                    ),
+                  ] else
+                    const StatusChip(
+                      label: 'Esperando conexión',
+                      color: AppColors.textSecondary,
+                      background: AppColors.surfaceAlt,
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sectionGap),
 
-                const SizedBox(height: 12),
-                // Chart de Fuerza
-                SectionChart(
-                  title: 'Fuerza',
-                  color: Colors.blue,
-                  getPoints: (ref) => ref.watch(bleProvider).dataFuerza,
-                ),
-                const SizedBox(height: 16),
-                // Chart de Fatiga
-                SectionChart(
-                  title: 'Fatiga',
-                  color: Colors.pink,
-                  getPoints: (ref) => ref.watch(bleProvider).dataFatiga,
-                ),
-                const SizedBox(height: 24),
-              ],
-            );
-          }, childCount: 1),
+              // Indicador de fatiga
+              const FatigueIndicator(),
+
+              const SizedBox(height: AppSpacing.sectionGap),
+
+              // Card de Fuerza
+              Text('Fuerza muscular', style: textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.md),
+              _MetricChart(
+                color: AppColors.primary,
+                getPoints: (ref) => ref.watch(bleProvider).dataFuerza,
+                emptyLabel: 'Esperando datos de fuerza...',
+              ),
+
+              const SizedBox(height: AppSpacing.sectionGap),
+
+              // Card de Fatiga
+              Text('Fatiga muscular', style: textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.md),
+              _MetricChart(
+                color: AppColors.error,
+                getPoints: (ref) => ref.watch(bleProvider).dataFatiga,
+                emptyLabel: 'Esperando datos de fatiga...',
+              ),
+
+              const SizedBox(height: AppSpacing.xxl),
+            ]),
+          ),
         ),
       ],
     );
@@ -81,18 +121,16 @@ class _MonitoringScreenView extends ConsumerWidget {
 
 typedef PointsSelector = List<BleDataPoint> Function(WidgetRef ref);
 
-class SectionChart extends ConsumerWidget {
-  final String title;
+class _MetricChart extends ConsumerWidget {
   final Color color;
   final PointsSelector getPoints;
-  final int visiblePoints;
+  static const int visiblePoints = 120;
+  final String emptyLabel;
 
-  const SectionChart({
-    super.key,
-    required this.title,
+  const _MetricChart({
     required this.color,
     required this.getPoints,
-    this.visiblePoints = 120,
+    required this.emptyLabel,
   });
 
   @override
@@ -108,77 +146,101 @@ class SectionChart extends ConsumerWidget {
 
     final lastValue = recent.isNotEmpty ? recent.last.y : null;
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  lastValue != null ? lastValue.toStringAsFixed(0) : '--',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 180,
-              child: points.isNotEmpty
-                  ? LineChart(
-                      LineChartData(
-                        minY: points
-                            .map((e) => e.y)
-                            .reduce((a, b) => a < b ? a : b),
-                        maxY: points
-                            .map((e) => e.y)
-                            .reduce((a, b) => a > b ? a : b),
-                        minX: 0,
-                        maxX: visiblePoints.toDouble(),
-                        lineTouchData: const LineTouchData(enabled: false),
-                        clipData: const FlClipData.all(),
-                        gridData: const FlGridData(
-                          show: true,
-                          drawVerticalLine: false,
-                        ),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: points,
-                            dotData: const FlDotData(show: false),
+    final textTheme = Theme.of(context).textTheme;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Valor hero
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                lastValue != null
+                    ? '${lastValue.toStringAsFixed(0)}%'
+                    : '--',
+                style: textTheme.displaySmall,
+              ),
+              const Spacer(),
+              Icon(Icons.open_in_full, size: 20, color: AppColors.textSecondary),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            lastValue != null
+                ? _getStatusLabel(lastValue)
+                : 'Sin datos',
+            style: textTheme.labelMedium?.copyWith(color: color),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Gráfica
+          SizedBox(
+            height: 140,
+            child: points.isNotEmpty
+                ? LineChart(
+                    LineChartData(
+                      minY: points
+                          .map((e) => e.y)
+                          .reduce((a, b) => a < b ? a : b),
+                      maxY: points
+                          .map((e) => e.y)
+                          .reduce((a, b) => a > b ? a : b),
+                      minX: 0,
+                      maxX: visiblePoints.toDouble(),
+                      lineTouchData: const LineTouchData(enabled: false),
+                      clipData: const FlClipData.all(),
+                      gridData: const FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: points,
+                          dotData: const FlDotData(show: false),
+                          color: color,
+                          barWidth: 2.5,
+                          isCurved: true,
+                          curveSmoothness: 0.2,
+                          belowBarData: BarAreaData(
+                            show: true,
                             gradient: LinearGradient(
-                              colors: [color.withAlpha(0), color],
-                              stops: const [0.1, 1.0],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                color.withAlpha(60),
+                                color.withAlpha(0),
+                              ],
                             ),
-                            barWidth: 3,
-                            isCurved: false,
                           ),
-                        ],
-                        titlesData: const FlTitlesData(show: false),
-                      ),
-                    )
-                  : const Center(child: Text('Esperando datos...')),
-            ),
-          ],
-        ),
+                        ),
+                      ],
+                      titlesData: const FlTitlesData(show: false),
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      emptyLabel,
+                      style: textTheme.bodyMedium,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
+  }
+
+  String _getStatusLabel(double value) {
+    if (color == AppColors.error) {
+      // Fatiga
+      if (value >= 75) return 'Severa';
+      if (value >= 50) return 'Moderada';
+      if (value >= 30) return 'Leve';
+      return 'Baja';
+    } else {
+      // Fuerza
+      if (value >= 70) return 'Buena';
+      if (value >= 40) return 'Moderada';
+      return 'Baja';
+    }
   }
 }

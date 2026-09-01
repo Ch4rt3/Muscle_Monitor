@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:muscle_monitoring/config/theme/design_tokens.dart';
 
 /// Niveles de fatiga según umbrales fisiológicos
 enum FatigueLevel {
@@ -38,7 +39,7 @@ class FatigueAlertConfigs {
   static const low = FatigueAlertConfig(
     title: 'Fatiga Leve',
     message: 'Nivel de fatiga detectado (30-49%)',
-    color: Color(0xFFFFA726), // Naranja claro/amarillo
+    color: AppColors.warning,
     icon: Icons.info_outline,
     displayDuration: Duration(seconds: 3),
   );
@@ -46,16 +47,16 @@ class FatigueAlertConfigs {
   static const medium = FatigueAlertConfig(
     title: 'Fatiga Moderada',
     message: 'Fatiga moderada detectada (50-74%)',
-    color: Color(0xFFFF6F00), // Naranja intenso
-    icon: Icons.warning_amber_rounded,
+    color: AppColors.warning,
+    icon: Icons.warning_amber_outlined,
     shouldVibrate: true,
     displayDuration: Duration(seconds: 4),
   );
 
   static const high = FatigueAlertConfig(
-    title: '⚠️ Riesgo de Sobreesfuerzo',
+    title: 'Riesgo de Sobreesfuerzo',
     message: 'Fatiga severa detectada (≥75%)',
-    color: Color(0xFFD32F2F), // Rojo
+    color: AppColors.error,
     icon: Icons.error_outline,
     shouldVibrate: true,
     shouldPlaySound: true,
