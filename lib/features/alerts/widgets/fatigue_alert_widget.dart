@@ -10,8 +10,14 @@ import 'package:muscle_monitoring/features/alerts/utils/fatigue_utils.dart';
 class FatigueAlertWidget extends StatefulWidget {
   final FatigueAlertConfig config;
   final VoidCallback? onDismiss;
+  final VoidCallback? onAutoDismiss;
 
-  const FatigueAlertWidget({super.key, required this.config, this.onDismiss});
+  const FatigueAlertWidget({
+    super.key,
+    required this.config,
+    this.onDismiss,
+    this.onAutoDismiss,
+  });
 
   @override
   State<FatigueAlertWidget> createState() => _FatigueAlertWidgetState();
@@ -36,12 +42,10 @@ class _FatigueAlertWidgetState extends State<FatigueAlertWidget>
       CurvedAnimation(parent: _controller, curve: AppMotion.enterCurve),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: AppMotion.enterCurve),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _controller, curve: AppMotion.enterCurve),
+        );
 
     _controller.forward();
 
@@ -51,14 +55,19 @@ class _FatigueAlertWidgetState extends State<FatigueAlertWidget>
 
     Future.delayed(widget.config.displayDuration, () {
       if (mounted) {
-        _dismiss();
+        _dismiss(byUser: false);
       }
     });
   }
 
-  void _dismiss() {
+  void _dismiss({bool byUser = true}) {
     _controller.reverse().then((_) {
-      widget.onDismiss?.call();
+      if (!mounted) return;
+      if (byUser) {
+        widget.onDismiss?.call();
+      } else {
+        (widget.onAutoDismiss ?? widget.onDismiss)?.call();
+      }
     });
   }
 
@@ -89,10 +98,7 @@ class _FatigueAlertWidgetState extends State<FatigueAlertWidget>
               borderRadius: AppRadius.xlRadius,
               boxShadow: AppShadows.overlay,
               border: Border(
-                left: BorderSide(
-                  color: widget.config.color,
-                  width: 4,
-                ),
+                left: BorderSide(color: widget.config.color, width: 4),
               ),
             ),
             child: Row(
@@ -125,10 +131,7 @@ class _FatigueAlertWidgetState extends State<FatigueAlertWidget>
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        widget.config.message,
-                        style: textTheme.bodyMedium,
-                      ),
+                      Text(widget.config.message, style: textTheme.bodyMedium),
                     ],
                   ),
                 ),

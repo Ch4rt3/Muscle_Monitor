@@ -4,14 +4,12 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:muscle_monitoring/config/theme/design_tokens.dart';
+import 'package:muscle_monitoring/core/models/fatigue_config.dart';
+import 'package:muscle_monitoring/core/acquisition/fatigue_processor.dart';
+export 'package:muscle_monitoring/core/acquisition/fatigue_processor.dart'
+    show FatigueLevel;
 
 /// Niveles de fatiga según umbrales fisiológicos
-enum FatigueLevel {
-  none, // < 30%
-  low, // 30-49%
-  medium, // 50-74%
-  high, // >= 75%
-}
 
 /// Clase que define las características de cada nivel de alerta
 class FatigueAlertConfig {
@@ -38,7 +36,7 @@ class FatigueAlertConfig {
 class FatigueAlertConfigs {
   static const low = FatigueAlertConfig(
     title: 'Fatiga Leve',
-    message: 'Nivel de fatiga detectado (30-49%)',
+    message: 'Nivel de fatiga leve detectado',
     color: AppColors.warning,
     icon: Icons.info_outline,
     displayDuration: Duration(seconds: 3),
@@ -46,7 +44,7 @@ class FatigueAlertConfigs {
 
   static const medium = FatigueAlertConfig(
     title: 'Fatiga Moderada',
-    message: 'Fatiga moderada detectada (50-74%)',
+    message: 'Fatiga moderada detectada',
     color: AppColors.warning,
     icon: Icons.warning_amber_outlined,
     shouldVibrate: true,
@@ -55,7 +53,7 @@ class FatigueAlertConfigs {
 
   static const high = FatigueAlertConfig(
     title: 'Riesgo de Sobreesfuerzo',
-    message: 'Fatiga severa detectada (≥75%)',
+    message: 'Fatiga severa detectada',
     color: AppColors.error,
     icon: Icons.error_outline,
     shouldVibrate: true,
@@ -64,17 +62,12 @@ class FatigueAlertConfigs {
   );
 }
 
-/// Determina el nivel de fatiga basado en el valor porcentual
-FatigueLevel getFatigueLevel(double fatigueValue) {
-  if (fatigueValue >= 75) {
-    return FatigueLevel.high;
-  } else if (fatigueValue >= 50) {
-    return FatigueLevel.medium;
-  } else if (fatigueValue >= 30) {
-    return FatigueLevel.low;
-  } else {
-    return FatigueLevel.none;
-  }
+/// Determina el nivel de fatiga basado en el valor porcentual.
+///
+/// Si se proporciona [config], usa los umbrales configurados.
+/// En caso contrario, usa los valores por defecto (30/50/75).
+FatigueLevel getFatigueLevel(double fatigueValue, {FatigueConfig? config}) {
+  return classifyFatigue(fatigueValue, config ?? FatigueConfig.defaultConfig);
 }
 
 /// Obtiene la configuración de alerta según el nivel de fatiga
@@ -91,9 +84,8 @@ FatigueAlertConfig? getAlertConfig(FatigueLevel level) {
   }
 }
 
-/// Convierte el valor EMG (0-255) a porcentaje (0-100)
+/// Conserva el valor recibido hasta validar rango y significado del firmware.
 double emgToPercentage(double emgValue) {
-  // El MyoWare 2.0 con ESP32 típicamente envía valores de 0-255
   return emgValue;
 }
 

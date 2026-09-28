@@ -177,7 +177,7 @@ class FatigueBadge extends ConsumerWidget {
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: config.color.withOpacity(0.5),
+                  color: config.color.withValues(alpha: 0.5),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),
@@ -270,7 +270,7 @@ class AlertTestScreen extends StatelessWidget {
                   Text(
                     '• Las alertas se activan automáticamente con datos reales\n'
                     '• Para pruebas, modifica temporalmente ble_provider.dart\n'
-                    '• Umbrales: 60% (leve), 76% (moderada), 90% (severa)\n'
+                    '• Umbrales: 30% (leve), 50% (moderada), 75% (severa)\n'
                     '• Cooldown de 5 segundos entre alertas del mismo nivel',
                     style: TextStyle(fontSize: 13),
                   ),

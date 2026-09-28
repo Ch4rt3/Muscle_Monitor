@@ -1,0 +1,4 @@
+#!/bin/sh
+# Usa el SDK de Command Line Tools para tests host; no modifica Xcode.
+export DEVELOPER_DIR=/Library/Developer/CommandLineTools
+exec /usr/bin/xcrun "$@"

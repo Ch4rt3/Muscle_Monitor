@@ -1,146 +1,74 @@
-# MyoSafe - Muscle Monitoring App 💪
+# MyoSafe — monitoreo muscular
 
-Aplicación Flutter para monitoreo de actividad muscular en tiempo real usando sensor MyoWare 2.0 conectado vía Bluetooth (ESP32).
+Aplicación Flutter de investigación con adquisición BLE, simulación, sesiones
+persistentes, alertas configurables y reproducción de grabaciones.
 
-## 🚀 Características Principales
+## Uso
 
-### ✅ Monitoreo BLE
-- Conexión Bluetooth con ESP32
-- Lectura en tiempo real de datos EMG (Fuerza y Fatiga)
-- Gráficos de línea con `fl_chart`
-- Gestión de permisos automática
+1. Ejecutar `flutter pub get` y `flutter run`.
+2. Abrir **Investigador** desde Bluetooth y registrar un participante con código
+   (por ejemplo, P01). Evitar datos identificables.
+3. En **Preparar sesión**, elegir participante, ejercicio, fuente y condición.
+   La simulación no requiere hardware. Para BLE, conectar primero el ESP32.
+4. Configurar los umbrales antes de empezar: por defecto **30 / 50 / 75**,
+   promedio móvil de 3 muestras y cooldown de 5 segundos. La configuración queda
+   congelada y guardada con la sesión.
+5. Finalizar desde Monitoreo y revisar la integridad. Puede añadirse una evaluación
+   opcional documentando instrumento y escala en las notas.
+6. En Investigador están Diagnóstico, Grabaciones y reproducción, y Exportar.
 
-### ✅ Sistema de Alertas de Fatiga (NUEVO)
-Sistema modular de alertas en tiempo real basado en niveles de fatiga muscular:
+La condición **sin alertas** conserva las evaluaciones del algoritmo, pero oculta
+overlay, indicador y etiquetas interpretativas. Mostrar u ocultar también la
+gráfica de fatiga es una decisión del investigador: una sesión BLE sin alertas no
+puede empezar con esa decisión pendiente.
 
-- **🟡 Fatiga Leve (60-75%)**: Alerta informativa
-- **🟠 Fatiga Moderada (76-89%)**: Alerta + vibración
-- **🔴 Fatiga Severa (≥90%)**: Alerta intensa + vibración
+Las sesiones son de primer plano. Al pasar a segundo plano se interrumpen; no se
+promete adquisición BLE en background. Al reiniciar se recuperan los registros
+durables de sesiones que no terminaron correctamente.
 
-**Características:**
-- Alertas animadas tipo overlay (no bloquean UI)
-- Promedio móvil para evitar falsos positivos
-- Cooldown de 5 segundos anti-spam
-- Indicador visual permanente en pantalla
-- Completamente personalizable
+## Datos
 
-📖 **Documentación completa**: [`ALERTS_IMPLEMENTATION_SUMMARY.md`](ALERTS_IMPLEMENTATION_SUMMARY.md)
+En el directorio privado de documentos de la app:
 
-## 📁 Estructura del Proyecto
+- `myosafe.db`: participantes, sesiones, mediciones, decisiones y evaluaciones.
+- `recordings/<uuid>.jsonl`: mediciones, resultados originales y confirmaciones
+  de visualización de alertas.
+- `recordings/<uuid>_comparison.json`: comparación de una reproducción.
+- `logs/critical.jsonl`: errores, advertencias y contexto de sesión recuperables.
+- `exports/`: archivos compartibles desde la app.
 
-```
-lib/
-├── config/
-│   ├── router/        # GoRouter configuración
-│   └── theme/         # Tema de la aplicación
-├── features/
-│   └── alerts/        # 🆕 Módulo de alertas de fatiga
-│       ├── models/
-│       ├── providers/
-│       ├── utils/
-│       ├── widgets/
-│       └── examples/
-├── presentation/
-│   ├── providers/     # BLE provider
-│   ├── screens/       # Pantallas principales
-│   └── widgets/       # Widgets compartidos
-└── main.dart
-```
+La exportación genera cinco CSV UTF-8: participantes, sesiones, mediciones, alertas
+y evaluaciones. Por defecto incluye solo sesiones BLE completadas; simulaciones,
+reproducciones e interrupciones requieren activar datos de diagnóstico.
 
-## 🛠️ Dependencias
+El replay no sobrescribe originales. El cooldown usa tiempo registrado, no la
+velocidad de reproducción.
 
-```yaml
-dependencies:
-  flutter_riverpod: ^2.6.1     # Manejo de estado
-  go_router: ^16.2.0           # Navegación
-  flutter_blue_plus: ^1.35.5   # Bluetooth BLE
-  fl_chart: ^1.1.0             # Gráficos
-  permission_handler: ^12.0.1  # Permisos
+## Verificación
+
+```sh
+flutter analyze --no-pub
+flutter test --no-pub
+flutter build apk --debug --no-pub
 ```
 
-## 🚀 Inicio Rápido
+En el Mac de desarrollo, mientras Xcode requiere aceptar su licencia, las pruebas
+nativas SQLite pueden utilizar las Command Line Tools ya instaladas:
 
-### 1. Instalar dependencias
-```bash
-flutter pub get
+```sh
+tool/test_with_clt.sh --no-pub
 ```
 
-### 2. Ejecutar la app
-```bash
-flutter run
-```
+El script solo modifica el entorno del proceso, no la configuración global.
+La suite incluye 60 segundos reales de simulación, SQLite real, reintentos,
+recuperación tras SIGKILL, replay y pruebas de interfaz.
 
-### 3. Conectar dispositivo BLE
-- Ve a la pantalla BLE
-- Busca tu ESP32
-- Conecta
-- Navega a "Monitoreo"
+## Límites
 
-### 4. Ver alertas en acción
-Las alertas aparecerán automáticamente cuando la fatiga supere los umbrales configurados.
+El protocolo BLE actual contiene un byte por notificación. Se valida su estructura,
+pero **no se ha validado el firmware ni el significado fisiológico de sus valores**.
+`sequence` se genera en Flutter y no detecta paquetes perdidos antes de la recepción.
+`firmwareSequence` permanece nulo. No se inventa una conversión a porcentaje.
 
-## 📚 Documentación del Módulo de Alertas
-
-- 📖 [`ALERTS_IMPLEMENTATION_SUMMARY.md`](ALERTS_IMPLEMENTATION_SUMMARY.md) - Resumen ejecutivo
-- 🚀 [`ALERTS_QUICKSTART.md`](ALERTS_QUICKSTART.md) - Guía rápida
-- 📖 [`lib/features/alerts/README.md`](lib/features/alerts/README.md) - Documentación técnica
-- 📊 [`lib/features/alerts/FLOW_DIAGRAM.md`](lib/features/alerts/FLOW_DIAGRAM.md) - Diagramas de flujo
-- ❓ [`lib/features/alerts/FAQ.md`](lib/features/alerts/FAQ.md) - Preguntas frecuentes
-
-## 🎯 Personalización de Alertas
-
-### Cambiar umbrales de fatiga
-Edita `lib/features/alerts/utils/fatigue_utils.dart`:
-```dart
-FatigueLevel getFatigueLevel(double fatigueValue) {
-  if (fatigueValue >= 90) return FatigueLevel.high;    // Cambiar aquí
-  if (fatigueValue >= 76) return FatigueLevel.medium;  // Cambiar aquí
-  if (fatigueValue >= 60) return FatigueLevel.low;     // Cambiar aquí
-  return FatigueLevel.none;
-}
-```
-
-### Ajustar colores y duración
-Edita las configuraciones en `FatigueAlertConfigs` del mismo archivo.
-
-## 🧪 Testing
-
-### Con Hardware Real
-1. Conecta el ESP32 con MyoWare 2.0
-2. Realiza ejercicios para generar fatiga
-3. Observa las alertas aparecer
-
-### Simulación (Sin Hardware)
-Modifica `lib/presentation/providers/ble_provider.dart` para simular datos de prueba.
-
-## 📱 Pantallas
-
-- **Home**: Pantalla de inicio
-- **BLE**: Búsqueda y conexión de dispositivos
-- **Monitoring**: Gráficos en tiempo real + alertas
-
-## 🏗️ Arquitectura
-
-- **State Management**: Riverpod
-- **Navigation**: GoRouter
-- **BLE**: flutter_blue_plus
-- **Charts**: fl_chart
-- **Alerts**: Módulo custom modular
-
-## 🔮 Próximas Funcionalidades
-
-- [ ] Sonido en alertas severas
-- [ ] Historial de sesiones
-- [ ] Exportar datos a CSV
-- [ ] Configuración de umbrales desde UI
-- [ ] Alertas para fuerza muscular
-- [ ] Estadísticas y análisis
-
-## 📄 Licencia
-
-Este proyecto es de código abierto.
-
-## 👤 Autor
-
-Desarrollado con ❤️ para monitoreo muscular seguro.
-
+Consulta [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) para estado por fase,
+evidencia, decisiones técnicas y pendientes de hardware/metodología.

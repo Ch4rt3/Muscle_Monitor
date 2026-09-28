@@ -31,11 +31,7 @@ class FatigueIndicator extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            _getIcon(level),
-            color: color,
-            size: 24,
-          ),
+          Icon(_getIcon(level), color: color, size: 24),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -98,11 +94,7 @@ class FatigueIndicator extends ConsumerWidget {
     };
   }
 
-  Widget _buildFatigueRing(
-    double value,
-    Color color,
-    TextTheme textTheme,
-  ) {
+  Widget _buildFatigueRing(double value, Color color, TextTheme textTheme) {
     return SizedBox(
       width: 64,
       height: 64,
@@ -128,10 +120,7 @@ class FatigueIndicator extends ConsumerWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              Text(
-                'Fatiga',
-                style: textTheme.labelSmall,
-              ),
+              Text('Fatiga', style: textTheme.labelSmall),
             ],
           ),
         ],

@@ -10,6 +10,7 @@ class FatigueAlertState {
   final bool isAlertActive;
   final DateTime? lastAlertTime;
   final FatigueLevel? lastAlertLevel;
+  final int? alertSequence;
 
   const FatigueAlertState({
     this.currentLevel = FatigueLevel.none,
@@ -17,6 +18,7 @@ class FatigueAlertState {
     this.isAlertActive = false,
     this.lastAlertTime,
     this.lastAlertLevel,
+    this.alertSequence,
   });
 
   FatigueAlertState copyWith({
@@ -25,6 +27,7 @@ class FatigueAlertState {
     bool? isAlertActive,
     DateTime? lastAlertTime,
     FatigueLevel? lastAlertLevel,
+    int? alertSequence,
   }) {
     return FatigueAlertState(
       currentLevel: currentLevel ?? this.currentLevel,
@@ -32,30 +35,8 @@ class FatigueAlertState {
       isAlertActive: isAlertActive ?? this.isAlertActive,
       lastAlertTime: lastAlertTime ?? this.lastAlertTime,
       lastAlertLevel: lastAlertLevel ?? this.lastAlertLevel,
+      alertSequence: alertSequence ?? this.alertSequence,
     );
-  }
-
-  /// Verifica si debe mostrar una nueva alerta
-  /// Aplica cooldown de 5 segundos para evitar spam
-  bool shouldShowAlert(FatigueLevel newLevel) {
-    // No mostrar si el nivel es none
-    if (newLevel == FatigueLevel.none) return false;
-
-    // Si no hay alerta activa, mostrar
-    if (!isAlertActive) return true;
-
-    // Si el nivel es diferente al actual, mostrar
-    if (newLevel != currentLevel) return true;
-
-    // Aplicar cooldown de 5 segundos
-    if (lastAlertTime != null) {
-      final elapsed = DateTime.now().difference(lastAlertTime!);
-      if (elapsed.inSeconds < 5) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   @override

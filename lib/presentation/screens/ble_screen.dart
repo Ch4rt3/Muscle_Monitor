@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:muscle_monitoring/features/session/session_provider.dart';
 import 'package:muscle_monitoring/config/theme/design_tokens.dart';
 import 'package:muscle_monitoring/presentation/providers/ble_provider.dart';
 import 'package:muscle_monitoring/presentation/widgets/ble/device_card.dart';
@@ -15,15 +17,27 @@ class BleScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bleController = ref.read(bleProvider.notifier);
     final bleState = ref.watch(bleProvider);
-    final isConnected =
-        bleState.connectionState == BleConnectionState.connected;
+    final sessionActive = ref.watch(sessionProvider).active;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Buscar dispositivo'),
+        actions: [
+          if (!sessionActive)
+            IconButton(
+              onPressed: () => context.push('/research'),
+              tooltip: 'Herramientas del investigador',
+              icon: const Icon(Icons.science_outlined),
+            ),
+        ],
       ),
       body: Column(
         children: [
+          if (bleState.error != null)
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Text(bleState.error!),
+            ),
           // Lista de dispositivos encontrados
           Expanded(
             child: StreamBuilder<List<ScanResult>>(
@@ -86,7 +100,9 @@ class BleScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => bleController.startDevicesScan(),
+                    onPressed: sessionActive
+                        ? null
+                        : () => bleController.startDevicesScan(),
                     child: const Text('Iniciar búsqueda'),
                   ),
                 ),
